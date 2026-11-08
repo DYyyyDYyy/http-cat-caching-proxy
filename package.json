@@ -8,8 +8,11 @@
     "start": "node main.js"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22.12"
   },
   "author": "Sviatoslav Didukh",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^15.1.0"
+  }
 }
