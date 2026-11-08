@@ -1,0 +1,11 @@
+# Start the server
+node main.js -h 127.0.0.1 -p 3000 -c ./cache
+
+# Missing required options
+node main.js
+node main.js -h 127.0.0.1 -p 3000
+node main.js -h 127.0.0.1 -p abc -c ./cache
+
+# Malformed paths
+curl -i http://127.0.0.1:3000/abc
+curl -i --path-as-is http://127.0.0.1:3000/../etc/passwd
