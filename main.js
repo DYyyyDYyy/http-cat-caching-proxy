@@ -21,6 +21,14 @@ if (!/^\d+$/.test(port) || Number(port) > 65535) {
 
 const cacheDir = path.resolve(cache);
 const ALLOWED_METHODS = ['GET', 'PUT', 'DELETE'];
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
+
+class HttpError extends Error {
+  constructor(status, message) {
+    super(message);
+    this.status = status;
+  }
+}
 
 function sendText(res, status, message, headers = {}) {
   res.writeHead(status, { 'Content-Type': 'text/plain; charset=utf-8', ...headers });
@@ -87,7 +95,12 @@ async function getImage(res, code) {
 
 async function readBody(req) {
   const chunks = [];
-  for await (const chunk of req) {
+  let size = 0;
+  for await (const chunk of req.iterator({ destroyOnReturn: false })) {
+    size += chunk.length;
+    if (size > MAX_IMAGE_SIZE) {
+      throw new HttpError(413, `Payload Too Large: limit is ${MAX_IMAGE_SIZE} bytes`);
+    }
     chunks.push(chunk);
   }
   return Buffer.concat(chunks);
@@ -130,6 +143,9 @@ const server = http.createServer(async (req, res) => {
         return await deleteImage(res, code);
     }
   } catch (err) {
+    if (err instanceof HttpError) {
+      return sendText(res, err.status, err.message, { Connection: 'close' });
+    }
     console.error(err);
     if (!res.headersSent) sendText(res, 500, 'Internal Server Error');
     else res.destroy();

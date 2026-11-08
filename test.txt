@@ -54,3 +54,8 @@ curl -i http://127.0.0.1:3000/418 -o /dev/null -D -
 curl -i -X POST http://127.0.0.1:3000/418
 curl -i -X PATCH http://127.0.0.1:3000/418
 curl -I http://127.0.0.1:3000/418
+
+# PUT with a body over 10 MB -> 413, nothing is stored
+head -c 11000000 /dev/urandom > /tmp/big.bin
+curl -i -X PUT --data-binary @/tmp/big.bin http://127.0.0.1:3000/200
+ls cache
