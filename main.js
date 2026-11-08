@@ -64,14 +64,40 @@ async function saveToCache(code, image) {
 }
 
 async function fetchFromHttpCat(code) {
-  const response = await superagent
-    .get(`https://http.cat/${code}`)
-    .responseType('blob')
-    .timeout({ response: 5000, deadline: 15000 });
-  if (!Buffer.isBuffer(response.body) || response.type !== 'image/jpeg') {
-    throw new Error(`unexpected response type '${response.type}'`);
+  try {
+    const response = await superagent
+      .get(`https://http.cat/${code}`)
+      .responseType('blob')
+      .timeout({ response: 5000, deadline: 15000 });
+    if (!Buffer.isBuffer(response.body) || response.type !== 'image/jpeg') {
+      throw new Error(`unexpected response type '${response.type}'`);
+    }
+    return response.body;
+  } catch (err) {
+    const reason = err.status ? `http.cat replied with ${err.status}` : err.message;
+    throw new HttpError(404, `Not Found: no image for ${code} (${reason})`);
   }
-  return response.body;
+}
+
+const pendingDownloads = new Map();
+
+async function downloadImage(code) {
+  try {
+    const image = await fetchFromHttpCat(code);
+    await saveToCache(code, image);
+    return image;
+  } finally {
+    pendingDownloads.delete(code);
+  }
+}
+
+function loadFromHttpCat(code) {
+  let download = pendingDownloads.get(code);
+  if (!download) {
+    download = downloadImage(code);
+    pendingDownloads.set(code, download);
+  }
+  return download;
 }
 
 async function getImage(res, code) {
@@ -81,15 +107,7 @@ async function getImage(res, code) {
   } catch (err) {
     if (err.code !== 'ENOENT') throw err;
   }
-
-  let image;
-  try {
-    image = await fetchFromHttpCat(code);
-  } catch (err) {
-    const reason = err.status ? `http.cat replied with ${err.status}` : err.message;
-    return sendText(res, 404, `Not Found: no image for ${code} (${reason})`);
-  }
-  await saveToCache(code, image);
+  const image = await loadFromHttpCat(code);
   sendImage(res, image, 'http.cat');
 }
 

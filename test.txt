@@ -59,3 +59,9 @@ curl -I http://127.0.0.1:3000/418
 head -c 11000000 /dev/urandom > /tmp/big.bin
 curl -i -X PUT --data-binary @/tmp/big.bin http://127.0.0.1:3000/200
 ls cache
+
+# Five parallel GETs for an image that is not cached yet: one download, identical results
+rm -rf cache
+for i in 1 2 3 4 5; do curl -s -D - -o par$i.jpg http://127.0.0.1:3000/203 | grep -i source & done; wait
+md5sum par*.jpg
+ls cache
