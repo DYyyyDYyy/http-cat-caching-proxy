@@ -12,6 +12,8 @@ All asynchronous code uses promises and `async`/`await` only: `fs/promises` for 
 
 ## Setup
 
+On Arch Linux, `./scripts/setup-arch.sh` installs git, curl, Node.js, npm, the npm dependencies and Postman (pass `--no-postman` to skip it). On other systems:
+
 ```bash
 npm install
 node main.js --host 127.0.0.1 --port 3000 --cache ./cache
