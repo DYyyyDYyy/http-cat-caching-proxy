@@ -84,6 +84,23 @@ async function getImage(res, code) {
   sendImage(res, image, 'http.cat');
 }
 
+async function readBody(req) {
+  const chunks = [];
+  for await (const chunk of req) {
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks);
+}
+
+async function putImage(req, res, code) {
+  const image = await readBody(req);
+  if (image.length === 0) {
+    return sendText(res, 400, 'Bad Request: request body is empty');
+  }
+  await saveToCache(code, image);
+  sendText(res, 201, `Created: image for ${code} saved`);
+}
+
 const server = http.createServer(async (req, res) => {
   try {
     const code = parseStatusCode(req);
@@ -93,6 +110,8 @@ const server = http.createServer(async (req, res) => {
     switch (req.method) {
       case 'GET':
         return await getImage(res, code);
+      case 'PUT':
+        return await putImage(req, res, code);
       default:
         return sendText(res, 501, 'Not Implemented');
     }

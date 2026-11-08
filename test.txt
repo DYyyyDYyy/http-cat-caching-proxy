@@ -34,3 +34,12 @@ curl -i http://127.0.0.1:3000/999
 
 # http.cat unreachable (server started in a network namespace without network access)
 unshare -rn bash -c 'node main.js -h 127.0.0.1 -p 3000 -c ./cache & sleep 1; curl -i http://127.0.0.1:3000/200'
+
+# PUT: store a custom image, then read it back (served from the cache, byte for byte)
+curl -i -X PUT --data-binary @samples/custom-image.jpg -H 'Content-Type: image/jpeg' http://127.0.0.1:3000/418
+cmp cache/418.jpg samples/custom-image.jpg
+curl -i http://127.0.0.1:3000/418 -o out3.jpg -D -
+cmp out3.jpg samples/custom-image.jpg
+
+# PUT with an empty body -> 400
+curl -i -X PUT http://127.0.0.1:3000/200
