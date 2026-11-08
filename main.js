@@ -20,6 +20,7 @@ if (!/^\d+$/.test(port) || Number(port) > 65535) {
 }
 
 const cacheDir = path.resolve(cache);
+const ALLOWED_METHODS = ['GET', 'PUT', 'DELETE'];
 
 function sendText(res, status, message, headers = {}) {
   res.writeHead(status, { 'Content-Type': 'text/plain; charset=utf-8', ...headers });
@@ -113,6 +114,9 @@ async function deleteImage(res, code) {
 
 const server = http.createServer(async (req, res) => {
   try {
+    if (!ALLOWED_METHODS.includes(req.method)) {
+      return sendText(res, 405, `Method Not Allowed: ${req.method}`, { Allow: ALLOWED_METHODS.join(', ') });
+    }
     const code = parseStatusCode(req);
     if (!code) {
       return sendText(res, 400, 'Bad Request: expected a path like /200');
@@ -124,8 +128,6 @@ const server = http.createServer(async (req, res) => {
         return await putImage(req, res, code);
       case 'DELETE':
         return await deleteImage(res, code);
-      default:
-        return sendText(res, 501, 'Not Implemented');
     }
   } catch (err) {
     console.error(err);
