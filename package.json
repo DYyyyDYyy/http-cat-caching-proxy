@@ -1,0 +1,15 @@
+{
+  "name": "http-cat-caching-proxy",
+  "version": "1.0.0",
+  "description": "Caching HTTP proxy server for http.cat images, built on Node.js http module",
+  "main": "main.js",
+  "type": "module",
+  "scripts": {
+    "start": "node main.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "author": "Sviatoslav Didukh",
+  "license": "MIT"
+}
