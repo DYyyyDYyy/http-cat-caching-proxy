@@ -1,0 +1,293 @@
+{
+  "info": {
+    "_postman_id": "3b352f87-1dd5-4e56-ad97-d14cd45e0819",
+    "name": "http-cat-caching-proxy",
+    "description": "Run against an empty cache directory. The requests are ordered so that the collection leaves the cache empty again.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "GET /418 - not cached yet",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+              "pm.test('Content-Type is image/jpeg', () => pm.response.to.have.header('Content-Type', 'image/jpeg'));",
+              "pm.test('X-Image-Source is http.cat', () => pm.expect(pm.response.headers.get('X-Image-Source')).to.eql('http.cat'));",
+              "pm.collectionVariables.set('httpCatSize', pm.response.headers.get('Content-Length'));",
+              "pm.collectionVariables.set('firstGetTime', pm.response.responseTime);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/418",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "418"
+          ]
+        }
+      }
+    },
+    {
+      "name": "GET /418 - repeated request",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+              "pm.test('Content-Type is image/jpeg', () => pm.response.to.have.header('Content-Type', 'image/jpeg'));",
+              "pm.test('X-Image-Source is cache', () => pm.expect(pm.response.headers.get('X-Image-Source')).to.eql('cache'));",
+              "pm.test('Same image as the first response', () => pm.expect(pm.response.headers.get('Content-Length')).to.eql(pm.collectionVariables.get('httpCatSize')));",
+              "console.log(`http.cat: ${pm.collectionVariables.get('firstGetTime')} ms, cache: ${pm.response.responseTime} ms`);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/418",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "418"
+          ]
+        }
+      }
+    },
+    {
+      "name": "PUT /418 - custom image",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 201', () => pm.response.to.have.status(201));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "image/jpeg"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/418",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "418"
+          ]
+        },
+        "body": {
+          "mode": "file",
+          "file": {
+            "src": "samples/custom-image.jpg"
+          }
+        }
+      }
+    },
+    {
+      "name": "GET /418 - after PUT",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+              "pm.test('Content-Type is image/jpeg', () => pm.response.to.have.header('Content-Type', 'image/jpeg'));",
+              "pm.test('X-Image-Source is cache', () => pm.expect(pm.response.headers.get('X-Image-Source')).to.eql('cache'));",
+              "pm.test('Custom image is returned instead of the http.cat one', () => pm.expect(pm.response.headers.get('Content-Length')).to.not.eql(pm.collectionVariables.get('httpCatSize')));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/418",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "418"
+          ]
+        }
+      }
+    },
+    {
+      "name": "DELETE /418",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/418",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "418"
+          ]
+        }
+      }
+    },
+    {
+      "name": "DELETE /418 - not cached",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/418",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "418"
+          ]
+        }
+      }
+    },
+    {
+      "name": "GET /299 - unknown code",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/299",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "299"
+          ]
+        }
+      }
+    },
+    {
+      "name": "POST /418 - method not allowed",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 405', () => pm.response.to.have.status(405));",
+              "pm.test('Allow header lists supported methods', () => pm.expect(pm.response.headers.get('Allow')).to.eql('GET, PUT, DELETE'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/418",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "418"
+          ]
+        }
+      }
+    },
+    {
+      "name": "GET /abc - malformed path",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 400', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/abc",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "abc"
+          ]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:3000",
+      "type": "string"
+    },
+    {
+      "key": "httpCatSize",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "firstGetTime",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
