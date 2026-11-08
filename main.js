@@ -24,9 +24,10 @@ const ALLOWED_METHODS = ['GET', 'PUT', 'DELETE'];
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 
 class HttpError extends Error {
-  constructor(status, message) {
+  constructor(status, message, headers = {}) {
     super(message);
     this.status = status;
+    this.headers = headers;
   }
 }
 
@@ -117,7 +118,9 @@ async function readBody(req) {
   for await (const chunk of req.iterator({ destroyOnReturn: false })) {
     size += chunk.length;
     if (size > MAX_IMAGE_SIZE) {
-      throw new HttpError(413, `Payload Too Large: limit is ${MAX_IMAGE_SIZE} bytes`);
+      throw new HttpError(413, `Payload Too Large: limit is ${MAX_IMAGE_SIZE} bytes`, {
+        Connection: 'close',
+      });
     }
     chunks.push(chunk);
   }
@@ -162,7 +165,7 @@ const server = http.createServer(async (req, res) => {
     }
   } catch (err) {
     if (err instanceof HttpError) {
-      return sendText(res, err.status, err.message, { Connection: 'close' });
+      return sendText(res, err.status, err.message, err.headers);
     }
     console.error(err);
     if (!res.headersSent) sendText(res, 500, 'Internal Server Error');
