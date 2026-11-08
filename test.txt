@@ -9,3 +9,11 @@ node main.js -h 127.0.0.1 -p abc -c ./cache
 # Malformed paths
 curl -i http://127.0.0.1:3000/abc
 curl -i --path-as-is http://127.0.0.1:3000/../etc/passwd
+
+# GET an image that is already in the cache (put the file there manually first)
+curl -s https://http.cat/418 -o cache/418.jpg
+curl -i http://127.0.0.1:3000/418 -o /dev/null -D -
+curl -s http://127.0.0.1:3000/418 -o out.jpg && cmp out.jpg cache/418.jpg
+
+# GET an image that is not cached
+curl -i http://127.0.0.1:3000/404

@@ -1,6 +1,6 @@
 import http from 'node:http';
 import { once } from 'node:events';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { program } from 'commander';
 
@@ -30,12 +30,44 @@ function parseStatusCode(req) {
   return match ? match[1] : null;
 }
 
-const server = http.createServer(async (req, res) => {
-  const code = parseStatusCode(req);
-  if (!code) {
-    return sendText(res, 400, 'Bad Request: expected a path like /200');
+const cacheFile = (code) => path.join(cacheDir, `${code}.jpg`);
+
+function sendImage(res, image, source) {
+  res.writeHead(200, {
+    'Content-Type': 'image/jpeg',
+    'Content-Length': image.length,
+    'X-Image-Source': source,
+  });
+  res.end(image);
+}
+
+async function getImage(res, code) {
+  try {
+    const image = await readFile(cacheFile(code));
+    sendImage(res, image, 'cache');
+  } catch (err) {
+    if (err.code !== 'ENOENT') throw err;
+    sendText(res, 404, `Not Found: no image for ${code}`);
   }
-  sendText(res, 404, `Not Found: no image for ${code}`);
+}
+
+const server = http.createServer(async (req, res) => {
+  try {
+    const code = parseStatusCode(req);
+    if (!code) {
+      return sendText(res, 400, 'Bad Request: expected a path like /200');
+    }
+    switch (req.method) {
+      case 'GET':
+        return await getImage(res, code);
+      default:
+        return sendText(res, 501, 'Not Implemented');
+    }
+  } catch (err) {
+    console.error(err);
+    if (!res.headersSent) sendText(res, 500, 'Internal Server Error');
+    else res.destroy();
+  }
 });
 
 try {
