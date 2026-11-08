@@ -69,7 +69,6 @@ async function fetchFromHttpCat(code) {
   try {
     const response = await superagent
       .get(`https://http.cat/${code}`)
-      .responseType('blob')
       .timeout({ response: 5000, deadline: 15000 });
     if (!Buffer.isBuffer(response.body) || response.type !== 'image/jpeg') {
       throw new Error(`unexpected response type '${response.type}'`);
