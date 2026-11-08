@@ -65,3 +65,8 @@ rm -rf cache
 for i in 1 2 3 4 5; do curl -s -D - -o par$i.jpg http://127.0.0.1:3000/203 | grep -i source & done; wait
 md5sum par*.jpg
 ls cache
+
+# Cache directory removed while the server is running: it is recreated on the next write
+rm -rf cache
+curl -i http://127.0.0.1:3000/418 -o /dev/null -D -
+ls cache

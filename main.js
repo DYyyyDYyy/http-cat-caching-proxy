@@ -56,6 +56,7 @@ function sendImage(res, image, source) {
 async function saveToCache(code, image) {
   const tmpFile = `${cacheFile(code)}.${randomUUID()}.tmp`;
   try {
+    await mkdir(cacheDir, { recursive: true });
     await writeFile(tmpFile, image);
     await rename(tmpFile, cacheFile(code));
   } catch (err) {
