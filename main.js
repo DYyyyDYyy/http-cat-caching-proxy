@@ -36,7 +36,7 @@ function sendText(res, status, message, headers = {}) {
 }
 
 function parseStatusCode(req) {
-  const { pathname } = new URL(req.url, 'http://localhost');
+  const [pathname] = req.url.split('?');
   const match = /^\/([1-5]\d\d)$/.exec(pathname);
   return match ? match[1] : null;
 }
