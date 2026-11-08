@@ -1,7 +1,7 @@
 import http from 'node:http';
 import { once } from 'node:events';
 import { randomUUID } from 'node:crypto';
-import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rename, rm, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { program } from 'commander';
 import superagent from 'superagent';
@@ -101,6 +101,16 @@ async function putImage(req, res, code) {
   sendText(res, 201, `Created: image for ${code} saved`);
 }
 
+async function deleteImage(res, code) {
+  try {
+    await unlink(cacheFile(code));
+  } catch (err) {
+    if (err.code !== 'ENOENT') throw err;
+    return sendText(res, 404, `Not Found: image for ${code} is not cached`);
+  }
+  sendText(res, 200, `OK: image for ${code} deleted`);
+}
+
 const server = http.createServer(async (req, res) => {
   try {
     const code = parseStatusCode(req);
@@ -112,6 +122,8 @@ const server = http.createServer(async (req, res) => {
         return await getImage(res, code);
       case 'PUT':
         return await putImage(req, res, code);
+      case 'DELETE':
+        return await deleteImage(res, code);
       default:
         return sendText(res, 501, 'Not Implemented');
     }

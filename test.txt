@@ -43,3 +43,9 @@ cmp out3.jpg samples/custom-image.jpg
 
 # PUT with an empty body -> 400
 curl -i -X PUT http://127.0.0.1:3000/200
+
+# DELETE: remove a cached image, then delete it again -> 404, then GET fetches it from http.cat again
+curl -i -X DELETE http://127.0.0.1:3000/418
+ls cache
+curl -i -X DELETE http://127.0.0.1:3000/418
+curl -i http://127.0.0.1:3000/418 -o /dev/null -D -
