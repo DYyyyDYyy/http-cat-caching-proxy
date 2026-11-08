@@ -13,6 +13,7 @@
   "author": "Sviatoslav Didukh",
   "license": "MIT",
   "dependencies": {
-    "commander": "^15.1.0"
+    "commander": "^15.1.0",
+    "superagent": "^10.4.2"
   }
 }

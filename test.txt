@@ -17,3 +17,20 @@ curl -s http://127.0.0.1:3000/418 -o out.jpg && cmp out.jpg cache/418.jpg
 
 # GET an image that is not cached
 curl -i http://127.0.0.1:3000/404
+
+# GET an image that is not cached: fetched from http.cat, then served from the cache
+rm -rf cache
+curl -i http://127.0.0.1:3000/418 -o out1.jpg -D -
+curl -i http://127.0.0.1:3000/418 -o out2.jpg -D -
+cmp out1.jpg out2.jpg
+ls -l cache
+
+# Code accepted by the proxy but missing on http.cat -> 404, nothing is cached
+curl -i http://127.0.0.1:3000/299
+ls cache
+
+# Out of range code -> 400
+curl -i http://127.0.0.1:3000/999
+
+# http.cat unreachable (server started in a network namespace without network access)
+unshare -rn bash -c 'node main.js -h 127.0.0.1 -p 3000 -c ./cache & sleep 1; curl -i http://127.0.0.1:3000/200'

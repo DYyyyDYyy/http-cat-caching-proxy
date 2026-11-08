@@ -1,8 +1,10 @@
 import http from 'node:http';
 import { once } from 'node:events';
-import { mkdir, readFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
+import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { program } from 'commander';
+import superagent from 'superagent';
 
 program
   .helpOption('--help', 'show usage information')
@@ -41,14 +43,45 @@ function sendImage(res, image, source) {
   res.end(image);
 }
 
+async function saveToCache(code, image) {
+  const tmpFile = `${cacheFile(code)}.${randomUUID()}.tmp`;
+  try {
+    await writeFile(tmpFile, image);
+    await rename(tmpFile, cacheFile(code));
+  } catch (err) {
+    await rm(tmpFile, { force: true });
+    throw err;
+  }
+}
+
+async function fetchFromHttpCat(code) {
+  const response = await superagent
+    .get(`https://http.cat/${code}`)
+    .responseType('blob')
+    .timeout({ response: 5000, deadline: 15000 });
+  if (!Buffer.isBuffer(response.body) || response.type !== 'image/jpeg') {
+    throw new Error(`unexpected response type '${response.type}'`);
+  }
+  return response.body;
+}
+
 async function getImage(res, code) {
   try {
     const image = await readFile(cacheFile(code));
-    sendImage(res, image, 'cache');
+    return sendImage(res, image, 'cache');
   } catch (err) {
     if (err.code !== 'ENOENT') throw err;
-    sendText(res, 404, `Not Found: no image for ${code}`);
   }
+
+  let image;
+  try {
+    image = await fetchFromHttpCat(code);
+  } catch (err) {
+    const reason = err.status ? `http.cat replied with ${err.status}` : err.message;
+    return sendText(res, 404, `Not Found: no image for ${code} (${reason})`);
+  }
+  await saveToCache(code, image);
+  sendImage(res, image, 'http.cat');
 }
 
 const server = http.createServer(async (req, res) => {
