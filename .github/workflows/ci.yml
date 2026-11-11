@@ -1,0 +1,57 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  # Start the proxy with an empty cache and run the Postman collection with newman.
+  api-tests:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - name: start the proxy
+        run: |
+          node main.js --host 127.0.0.1 --port 3000 --cache "$RUNNER_TEMP/cache" > server.log 2>&1 &
+          for i in $(seq 1 20); do curl -s -o /dev/null 127.0.0.1:3000/200 && break; sleep 0.5; done
+      - run: npm test
+      - name: graceful shutdown on SIGTERM
+        run: |
+          pkill -TERM -f "node main.js"
+          sleep 1
+          ! pgrep -f "node main.js"
+          grep -q "SIGTERM received" server.log
+      - if: failure()
+        run: cat server.log
+
+  docker:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: docker build -t http-cat-caching-proxy .
+      - run: docker run -d --name proxy -p 3000:3000 http-cat-caching-proxy
+      - run: for i in $(seq 1 20); do curl -s -o /dev/null 127.0.0.1:3000/200 && break; sleep 0.5; done
+      - run: npm test
+      - name: runs as non-root
+        run: test "$(docker exec proxy id -u)" != "0"
+      - name: stops cleanly within the grace period
+        run: |
+          docker stop -t 10 proxy
+          test "$(docker inspect -f '{{.State.ExitCode}}' proxy)" = 0
