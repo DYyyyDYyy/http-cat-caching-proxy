@@ -183,3 +183,14 @@ try {
 }
 
 console.log(`Listening on http://${host}:${port}, cache: ${cacheDir}`);
+
+// Graceful shutdown: stop accepting connections, let in-flight requests finish.
+// SIGTERM is what `docker stop` and systemd send.
+for (const signal of ['SIGTERM', 'SIGINT']) {
+  process.once(signal, () => {
+    console.log(`${signal} received, closing server`);
+    server.close(() => process.exit(0));
+    server.closeIdleConnections();
+    setTimeout(() => process.exit(1), 10_000).unref();
+  });
+}
