@@ -1,5 +1,7 @@
 # http-cat-caching-proxy
 
+[![ci](https://github.com/DYyyyDYyy/http-cat-caching-proxy/actions/workflows/ci.yml/badge.svg)](https://github.com/DYyyyDYyy/http-cat-caching-proxy/actions/workflows/ci.yml)
+
 A small caching HTTP proxy for [http.cat](https://http.cat) images, written in Node.js on top of the built-in `http` module.
 
 The first request for an image is forwarded to http.cat, stored on disk and returned to the client. Later requests are served straight from the cache directory. Images can also be uploaded or removed by hand.
@@ -26,6 +28,15 @@ node main.js --host 127.0.0.1 --port 3000 --cache ./cache
 | `-c, --cache <path>` | directory for cached images, created on startup if missing |
 
 All three options are required. `--help` prints usage.
+
+### Docker
+
+```bash
+docker build -t http-cat-caching-proxy .
+docker run -d -p 3000:3000 -v http-cat-cache:/cache http-cat-caching-proxy
+```
+
+The container runs as the unprivileged `node` user. On `SIGTERM` (`docker stop`, systemd) the server stops accepting connections and lets in-flight requests finish before exiting.
 
 ## API
 
@@ -66,7 +77,9 @@ curl -i -X DELETE http://127.0.0.1:3000/418
 `test.txt` lists the curl commands used to check every method. `postman/` holds a Postman collection with automated tests; start from an empty cache directory:
 
 ```bash
-npx newman run postman/http-cat-caching-proxy.postman_collection.json --working-dir .
+npm test    # newman run postman/http-cat-caching-proxy.postman_collection.json
 ```
+
+CI runs the collection on Node.js 22 and 24 against a freshly started server, then again against the Docker image, and checks that both shut down cleanly on `SIGTERM`.
 
 The collection variable `baseUrl` holds the server address. The `PUT` request uploads `samples/custom-image.jpg`; in the Postman app set the working directory to the repository folder or pick the file again.
