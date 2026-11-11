@@ -1,0 +1,8 @@
+node_modules
+.git
+cache
+postman
+samples
+scripts
+*.md
+test.txt
